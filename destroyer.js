@@ -78,7 +78,7 @@
 
         try {
             const keys = ownKeys(scope);
-            if (keys) {
+            if (keys.length) {
                 _console_log('Not deleted:', scope, keys);
             }
         } catch (e) {
