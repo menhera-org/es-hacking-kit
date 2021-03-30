@@ -14,6 +14,8 @@ const _call = Reflect.apply;
 const _Worker_addEventListener = _Worker.prototype.addEventListener;
 const _console_log = console.log;
 const _append = _resultsBox.append;
+const _getMessageData = Reflect.getOwnPropertyDescriptor(MessageEvent.prototype, 'data');
+const _defineProperty = Reflect.defineProperty;
 
 const _logger = (str) => {
     _console_log(str);
@@ -39,6 +41,7 @@ function _destroyWorker(recurseProperties) {
     _call(_Worker_addEventListener, worker, [
         'message'
         ,ev => {
+            _defineProperty(ev, 'data', _getMessageData);
             _logger('(Worker) ' + ev.data);
         }
     ]);

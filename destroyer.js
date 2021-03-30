@@ -5,6 +5,7 @@
     const ownKeys = Reflect.ownKeys;
     const call = Reflect.apply;
     const construct = Reflect.construct;
+    const setPrototypeOf = Reflect.setPrototypeOf;
     const _Object = Object;
     const _Object_is = Object.is;
     const _Object_create = Object.create;
@@ -77,6 +78,14 @@
                     }
                 );
             }
+        }
+
+        try {
+            setPrototypeOf(scope, null);
+        } catch (e) {}
+
+        if (!getPrototypeOf(scope)) {
+            results.__proto__ = null;
         }
 
         try {
