@@ -2,44 +2,50 @@
 <meta charset="UTF-8">
 <title>ES Hacking Kit</title>
 <script src="destroyer.js"></script>
+<button onclick="_destroyWorker(false)">Destroy Worker</button>
+<button onclick="_destroyWorker(true)">Destroy Worker (recursive)</button>
+<button onclick="_destroyWindow(false)">Destroy Window</button>
+<button onclick="_destroyWindow(true)">Destroy Window (recursive)</button>
 <pre id="results"></pre>
 <script>
-const resultsBox = document.querySelector('#results');
+const _resultsBox = document.querySelector('#results');
 const _Worker = Worker;
-const call = Reflect.apply;
+const _call = Reflect.apply;
 const _Worker_addEventListener = _Worker.prototype.addEventListener;
 const _console_log = console.log;
-const logger = (str) => {
+const _append = _resultsBox.append;
+
+const _logger = (str) => {
     _console_log(str);
     try {
-        resultsBox.append('\n\n', '' + str);
+        _call(
+            _append
+            ,_resultsBox
+            ,['\n\n', '' + str]
+        );
     } catch (e) {}
 };
 
 const _destroyGlobalThis = destroyGlobalThis;
 
-function destroyWorker(recurseProperties) {
+function _destroyWorker(recurseProperties) {
     const worker = new _Worker(recurseProperties ? 'worker-recursive.js' : 'worker.js');
-    call(_Worker_addEventListener, worker, [
+    _call(_Worker_addEventListener, worker, [
         'error'
         ,ev => {
-            logger(ev.message);
+            _logger(ev.message);
         }
     ]);
-    call(_Worker_addEventListener, worker, [
+    _call(_Worker_addEventListener, worker, [
         'message'
         ,ev => {
-            logger(ev.data);
+            _logger('(Worker) ' + ev.data);
         }
     ]);
 }
 
-function destroyWindow(recurseProperties) {
+function _destroyWindow(recurseProperties) {
     const msg = _destroyGlobalThis(recurseProperties);
-    logger(msg);
+    _logger('(Window) ' + msg);
 }
 </script>
-<button onclick="destroyWorker(false)">Destroy Worker</button>
-<button onclick="destroyWorker(true)">Destroy Worker (recursive)</button>
-<button onclick="destroyWindow(false)">Destroy Window</button>
-<button onclick="destroyWindow(true)">Destroy Window (recursive)</button>
