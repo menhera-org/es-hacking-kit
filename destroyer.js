@@ -14,7 +14,7 @@
     const _WeakSet_has = WeakSet.prototype.has;
     const _WeakSet_add = WeakSet.prototype.add;
     const _WeakSet_delete = WeakSet.prototype.delete;
-    const _console_log = console.log;
+    const _console_log = console ? ('function' == typeof console.log ? console.log : () => {}) : () => {};
     const _Array_forEach = Array.prototype.forEach;
     const _JSON_stringify = JSON.stringify;
     const forEach = (arr, callback, thisArg) => call(
