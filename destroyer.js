@@ -16,6 +16,7 @@
     const _WeakSet_delete = WeakSet.prototype.delete;
     const _console_log = console.log;
     const _Array_forEach = Array.prototype.forEach;
+    const _JSON_stringify = JSON.stringify;
     const forEach = (arr, callback, thisArg) => call(
         _Array_forEach
         ,arr
@@ -79,7 +80,7 @@
         try {
             const keys = ownKeys(scope);
             if (keys.length) {
-                _console_log('Not deleted:', scope, keys);
+                _console_log('Not deleted:', scope, _JSON_stringify(keys));
             }
         } catch (e) {
             _console_log(scope, e);
