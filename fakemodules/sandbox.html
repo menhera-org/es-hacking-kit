@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<script id="worker" type="worker">
+    'use strict';
+    {
+        const ES_GLOBALS = ['globalThis', 'Infinity', 'NaN', 'undefined', 'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt', 'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent', 'Array', 'ArrayBuffer', 'BigInt', 'BigInt64Array', 'BigUint64Array', 'Boolean', 'DataView', 'Date', 'Error', 'EvalError', 'FinalizationRegistry', 'Float32Array', 'Float64Array', 'Function', 'Int8Array', 'Int16Array', 'Int32Array', 'Map', 'Number', 'Object', 'Promise', 'Proxy', 'RangeError', 'ReferenceError', 'RegExp', 'Set', 'SharedArrayBuffer', 'String', 'Symbol', 'SyntaxError', 'TypeError', 'Uint8Array', 'Uint8ClampedArray', 'Uint16Array', 'Uint32Array', 'URIError', 'WeakMap', 'WeakRef', 'WeakSet', 'Atomics', 'JSON', 'Math', 'Reflect'];
+        const COMPAT_GLOBALS = ['console', 'setTimeout', 'setInterval', 'Event', 'EventTarget', 'MessageChannel', 'MessageEvent', 'MessageChannel', 'clearTimeout', 'clearInterval', 'TextEncoder', 'TextDecoder', 'URL', 'URLSearchParams', 'WebAssembly'];
+    
+        // save system methods before cleanup
+        const _postMessage = postMessage;
+        const _addEventListener = addEventListener;
+        const _importScripts = importScripts;
+        const _fetch = fetch;
+        const _location = location;
+
+        const moduleState = Object.create(null);
+        moduleState.url = _location.href;
+        moduleState.module = {
+            exports: {},
+            id: _location.href,
+        };
+        moduleState.moduleStack = [];
+        moduleState.moduleStack.push(moduleState.module);
+        let mainLoaded = false;
+        const urlMap = new Map;
+    
+        const moduleUtils = {
+            loadModule(url) {
+                const stringUrl = String(url);
+                moduleState.module = {
+                    exports: {},
+                    id: stringUrl,
+                };
+                moduleState.url = stringUrl;
+                moduleState.moduleStack.push(moduleState.module);
+                try {
+                    if (urlMap.has(url)) url = urlMap.get(url);
+                    _importScripts(url);
+                } catch (e) {
+                    console.error(e);
+                }
+                const loadedModule = moduleState.moduleStack.pop();
+                moduleState.module = moduleState.moduleStack.slice(-1)[0];
+                moduleState.url = String(new URL(moduleState.module.id, _location.href));
+                return loadedModule;
+            },
+            getModule() {
+                return moduleState.module;
+            },
+            getExports() {
+                return moduleState.module.exports;
+            },
+            setExports(value) {
+                return Reflect.set(moduleState.module, 'exports', value);
+            },
+            getDirname() {
+                const url = new URL(moduleState.url);
+                const parts = url.pathname.split('/');
+                parts.pop();
+                while (parts.length < 2) parts.push('');
+                return parts.join('/');
+            },
+            getFilename() {
+                const url = new URL(moduleState.url);
+                const parts = url.pathname.split('/');
+                return parts.slice(-1)[0];
+            },
+            require: function require(id) {
+                let url = String(id).split('#')[0];
+                if (!url.endsWith('.js')) {
+                    url = url + '.js';
+                }
+                const _module = moduleUtils.loadModule(url);
+                return _module.exports;
+            },
+        };
+    
+        const process = {
+            //
+        };
+    
+        // cleanup before creating modules
+        {
+            let scope = globalThis;
+            while (Object.prototype != scope && scope) {
+                for (const key of Reflect.ownKeys(scope)) {
+                    if (ES_GLOBALS.includes(key) || COMPAT_GLOBALS.includes(key)) continue;
+                    try {
+                        delete scope[key];
+                    } catch (e) {}
+                }
+                scope = Reflect.getPrototypeOf(scope);
+            }
+        }
+    
+        Reflect.defineProperty(globalThis, 'global', {
+            value: globalThis,
+        });
+    
+        Reflect.defineProperty(globalThis, 'module', {
+            get: () => moduleUtils.getModule(),
+        });
+    
+        Reflect.defineProperty(globalThis, 'exports', {
+            get: () => moduleUtils.getExports(),
+            set: (value) => moduleUtils.setExports(value),
+        });
+    
+        Reflect.defineProperty(globalThis, 'require', {
+            get: () => moduleUtils.require,
+        });
+    
+        Reflect.defineProperty(globalThis, '__dirname', {
+            get: () => moduleUtils.getDirname(),
+        });
+    
+        Reflect.defineProperty(globalThis, '__filename', {
+            get: () => moduleUtils.getFilename(),
+        });
+    
+        Reflect.defineProperty(globalThis, 'process', {
+            value: process,
+        });
+    
+        _addEventListener('message', ev => {
+            const {command, data} = ev.data;
+            switch (command) {
+                case 'load_main': {
+                    if (mainLoaded) break;
+                    mainLoaded = true;
+                    const urls = new Set(data.urls || []);
+                    const mainUrl = data.mainUrl;
+                    urls.add(mainUrl);
+                    try {
+                        new URL(mainUrl);
+                    } catch (e) {
+                        console.error('Not an absolute URL');
+                        break;
+                    }
+                    const promises = [];
+                    for (const whitelistedUrl of urls) {
+                        promises.push(_fetch(String(new URL(whitelistedUrl, mainUrl))).then(async res => {
+                            const blob = await res.blob();
+                            const blobUrl = URL.createObjectURL(blob);
+                            urlMap.set(whitelistedUrl, blobUrl);
+                        }));
+                    }
+                    Promise.all(promises).then(async () => {
+                        console.log('Loading main:', mainUrl);
+    
+                        try {
+                            moduleUtils.loadModule(mainUrl);
+                        } catch (e) {
+                            console.error('Module execution failed:', e);
+                        }
+                    }).catch(e => {
+                        console.error('Module load failed:', e);
+                    });
+                    
+                    break;
+                }
+    
+                default: {
+                    console.warn('Unknown command:', command);
+                    break;
+                }
+            }
+        });
+    }    
+</script>
+<script>
+const blob = new Blob([document.querySelector('#worker').textContent], {
+    type: 'text/javascript'
+});
+const worker = new Worker(URL.createObjectURL(blob));
+window.addEventListener('message', ev => {
+    worker.postMessage(ev.data);
+});
+</script>
