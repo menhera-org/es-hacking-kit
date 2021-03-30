@@ -38,10 +38,14 @@
                 keys
                 ,(key) => {
                     try {
-                        saved[key] = scope[key];
+                        try {
+                            saved[key] = scope[key];
+                        } catch (e) {
+                            //_console_log(scope, e);
+                        }
                         delete scope[key];
                     } catch (e) {
-                        _console_log(scope, e);
+                        //_console_log(scope, e);
                     }
                 }
             );
@@ -49,7 +53,7 @@
             try {
                 destroy(getPrototypeOf(scope), recurseProperties);
             } catch (e) {
-                _console_log(scope, e);
+                //_console_log(scope, e);
             }
 
             if (recurseProperties) {
@@ -59,7 +63,7 @@
                         try {
                             destroy(saved[key], true);
                         } catch (e) {
-                            _console_log(scope, e);
+                            //_console_log(scope, e);
                         }
                     }
                 );
@@ -68,6 +72,15 @@
 
         try {
             _Object_freeze(scope);
+        } catch (e) {
+            _console_log(scope, e);
+        }
+
+        try {
+            const keys = ownKeys(scope);
+            if (keys) {
+                _console_log('Not deleted:', scope, keys);
+            }
         } catch (e) {
             _console_log(scope, e);
         }
