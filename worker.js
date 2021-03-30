@@ -1,2 +1,2 @@
 importScripts('destroyer.js');
-destroy(globalThis);
+destroyGlobalThis(false);

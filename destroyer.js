@@ -23,14 +23,20 @@
         ,[callback, thisArg]
     );
 
+    const weakset_add = (weakSet, obj) => call(_WeakSet_add, weakSet, [obj]);
+    const weakset_has = (weakSet, obj) => call(_WeakSet_has, weakSet, [obj]);
+    const weakset_delete = (weakSet, obj) => call(_WeakSet_delete, weakSet, [obj]);
+
     const visitedObjects = new _WeakSet;
 
     const destroy = (scope, recurseProperties) => {
-        if (null === scope) return;
-        if ('object' != typeof scope && 'function' != typeof scope) return;
+        if (null === scope) return null;
+        if ('object' != typeof scope && 'function' != typeof scope) return null;
 
-        if (call(_WeakSet_has, visitedObjects, [scope])) return;
-        call(_WeakSet_add, visitedObjects, [scope]);
+        if (weakset_has(visitedObjects, scope)) return '<recursion>';
+        weakset_add(visitedObjects, scope);
+
+        const results = _Object_create(null);
         
         if (recurseProperties || !_Object_is(scope, _Object_prototype)) {
             const keys = ownKeys(scope);
@@ -52,9 +58,10 @@
             );
 
             try {
-                destroy(getPrototypeOf(scope), recurseProperties);
+                results.__proto__ = destroy(getPrototypeOf(scope), recurseProperties);
             } catch (e) {
                 //_console_log(scope, e);
+                results.__proto__ = '<error>';
             }
 
             if (recurseProperties) {
@@ -62,9 +69,10 @@
                     keys
                     ,(key) => {
                         try {
-                            destroy(saved[key], true);
+                            results[key] = destroy(saved[key], true);
                         } catch (e) {
                             //_console_log(scope, e);
+                            results[key] = '<error>';
                         }
                     }
                 );
@@ -77,15 +85,25 @@
             _console_log(scope, e);
         }
 
+        const remains = _Object_create(null);
         try {
             const keys = ownKeys(scope);
-            if (keys.length) {
-                _console_log('Not deleted:', scope, _JSON_stringify(keys));
-            }
+            forEach(
+                keys
+                ,(key) => {
+                    remains[key] = results[key] || null;
+                }
+            );
         } catch (e) {
             _console_log(scope, e);
         }
+        remains.__proto__ = results.__proto__ || null;
+        return remains;
     };
 
     globalThis.destroy = destroy;
+
+    globalThis.destroyGlobalThis = (recurseProperties) => {
+        _console_log('remains:', _JSON_stringify(destroy(globalThis, recurseProperties)));
+    };
 }

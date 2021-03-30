@@ -3,15 +3,16 @@
 <title>ES Hacking Kit</title>
 <script src="destroyer.js"></script>
 <script>
+const _Worker = Worker;
 function destroyWorker() {
-    const worker = new Worker('worker.js');
+    const worker = new _Worker('worker.js');
 }
 
 function destroyWorkerRecursive() {
-    const worker = new Worker('worker-recursive.js');
+    const worker = new _Worker('worker-recursive.js');
 }
 </script>
 <button onclick="destroyWorker()">Destroy Worker</button>
 <button onclick="destroyWorkerRecursive()">Destroy Worker (recursive)</button>
-<button onclick="destroy(window)">Destroy Window</button>
-<button onclick="destroy(window, true)">Destroy Window (recursive)</button>
+<button onclick="destroyGlobalThis(false)">Destroy Window</button>
+<button onclick="destroyGlobalThis(true)">Destroy Window (recursive)</button>
