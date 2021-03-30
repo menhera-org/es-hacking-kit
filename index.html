@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<title>ES Hacking Kit</title>
+<script src="destroyer.js"></script>
+<script>
+function destroyWorker() {
+    const worker = new Worker('worker.js');
+}
+
+function destroyWorkerRecursive() {
+    const worker = new Worker('worker-recursive.js');
+}
+</script>
+<button onclick="destroyWorker()">Destroy Worker</button>
+<button onclick="destroyWorkerRecursive()">Destroy Worker (recursive)</button>
+<button onclick="destroy(window)">Destroy Window</button>
+<button onclick="destroy(window, true)">Destroy Window (recursive)</button>
