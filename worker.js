@@ -1,2 +1,7 @@
 importScripts('destroyer.js');
-destroyGlobalThis(false);
+{
+    const msg = postMessage;
+    const die = close;
+    msg(destroyGlobalThis(false));
+    die();
+}

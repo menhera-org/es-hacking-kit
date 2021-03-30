@@ -2,17 +2,44 @@
 <meta charset="UTF-8">
 <title>ES Hacking Kit</title>
 <script src="destroyer.js"></script>
+<pre id="results"></pre>
 <script>
+const resultsBox = document.querySelector('#results');
 const _Worker = Worker;
-function destroyWorker() {
-    const worker = new _Worker('worker.js');
+const call = Reflect.apply;
+const _Worker_addEventListener = _Worker.prototype.addEventListener;
+const _console_log = console.log;
+const logger = (str) => {
+    _console_log(str);
+    try {
+        resultsBox.append('\n\n', '' + str);
+    } catch (e) {}
+};
+
+const _destroyGlobalThis = destroyGlobalThis;
+
+function destroyWorker(recurseProperties) {
+    const worker = new _Worker(recurseProperties ? 'worker-recursive.js' : 'worker.js');
+    call(_Worker_addEventListener, worker, [
+        'error'
+        ,ev => {
+            logger(ev.message);
+        }
+    ]);
+    call(_Worker_addEventListener, worker, [
+        'message'
+        ,ev => {
+            logger(ev.data);
+        }
+    ]);
 }
 
-function destroyWorkerRecursive() {
-    const worker = new _Worker('worker-recursive.js');
+function destroyWindow(recurseProperties) {
+    const msg = _destroyGlobalThis(recurseProperties);
+    logger(msg);
 }
 </script>
-<button onclick="destroyWorker()">Destroy Worker</button>
-<button onclick="destroyWorkerRecursive()">Destroy Worker (recursive)</button>
-<button onclick="destroyGlobalThis(false)">Destroy Window</button>
-<button onclick="destroyGlobalThis(true)">Destroy Window (recursive)</button>
+<button onclick="destroyWorker(false)">Destroy Worker</button>
+<button onclick="destroyWorker(true)">Destroy Worker (recursive)</button>
+<button onclick="destroyWindow(false)">Destroy Window</button>
+<button onclick="destroyWindow(true)">Destroy Window (recursive)</button>

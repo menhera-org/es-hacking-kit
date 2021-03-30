@@ -104,6 +104,7 @@
     globalThis.destroy = destroy;
 
     globalThis.destroyGlobalThis = (recurseProperties) => {
-        _console_log('remains:', _JSON_stringify(destroy(globalThis, recurseProperties)));
+        const msg = 'remains: ' + _JSON_stringify(destroy(globalThis, recurseProperties), null, 4);
+        return msg;
     };
 }
