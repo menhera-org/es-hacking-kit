@@ -86,6 +86,7 @@
         }
 
         const remains = _Object_create(null);
+        remains.__proto__ = results.__proto__ || null;
         try {
             const keys = ownKeys(scope);
             forEach(
@@ -97,7 +98,6 @@
         } catch (e) {
             _console_log(scope, e);
         }
-        remains.__proto__ = results.__proto__ || null;
         return remains;
     };
 
